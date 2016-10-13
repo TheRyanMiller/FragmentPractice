@@ -1,5 +1,7 @@
 package com.rtmillerprojects.fragmentpractice;
 
+import android.app.ProgressDialog;
+import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.Message;
 import android.support.v4.app.FragmentManager;
@@ -15,7 +17,8 @@ public class MainActivity extends AppCompatActivity {
     Button btn_frag2;
     ProgressBar pb;
     Handler handler;
-    Thread thread;
+    MyTask task;
+    ProgressDialog pd;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -25,13 +28,8 @@ public class MainActivity extends AppCompatActivity {
 
         final FragmentManager fm = getSupportFragmentManager();
 
-        thread = new Thread(new MyThread());
-        handler = new Handler(){
-            @Override
-            public void handleMessage(Message msg) {
-                pb.setProgress(msg.arg1);
-            }
-        };
+
+
 
         btn_frag1 = (Button) findViewById(R.id.button);
         btn_frag2 = (Button) findViewById(R.id.button2);
@@ -45,9 +43,6 @@ public class MainActivity extends AppCompatActivity {
                         .replace(R.id.frame_container, new Fragment1(),Fragment1.class.getName()/*TAG OF FRAGMENT WITH A NAME FOR FUTURE LOOKUP*/)
                         .commit();
 
-                if(!thread.isAlive()){
-                    thread.start();
-                }
             }
         });
         btn_frag2.setOnClickListener(new View.OnClickListener() {
@@ -59,32 +54,41 @@ public class MainActivity extends AppCompatActivity {
                         .replace(R.id.frame_container, new Fragment2(),Fragment2.class.getName()/*TAG OF FRAGMENT WITH A NAME FOR FUTURE LOOKUP*/)
                         .commit();
 
-                if(!thread.isAlive()){
-                    thread.start();
-                }
             }
         });
 
-
+        pd = new ProgressDialog(this);
+        pd.show();
+        pd.setMessage("Waiting for result of asyncTask");
+        task = new MyTask();
+        task.execute();
 
 
     }
 
-    class MyThread implements Runnable{
+    class MyTask extends AsyncTask<Void, String, Void>{
+
 
         @Override
-        public void run() {
+        protected void onProgressUpdate(String[] values) {
+            pd.setMessage(values[0]);
+            if(values[0].equals("99")){
+                pd.cancel();
+            }
+        }
+
+
+        @Override
+        protected Void doInBackground(Void... params) {
             for (int i = 0; i < 100; i++) {
-                Message msg = Message.obtain();
-                msg.arg1=i;
-                handler.sendMessage(msg);
                 try {
                     Thread.sleep(100);
+                    publishProgress(""+i);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
             }
-
+            return null;
         }
     }
 }
